@@ -1,17 +1,15 @@
 # LFMWindow
 
-Last.fm Now Playing display. Current implementation: Vue 3 + Vite in `vue-app/`.
+View what you're listening to in a pretty customizable page.
 
-## Develop
+## Build
 
-```powershell
-Set-Location -LiteralPath 'c:\Users\Jay\lfmwindow\vue-app'
-npm i
-npm run dev
-```
+None currently. This is a hogepodge personal project and this repo serves as a public mirror... for now
 
-Open http://localhost:5173/
 
-## Notes
-- For production, prefer the Last.fm API through a small proxy over scraping.
+## Roadmap ig
+
+- hopefully use some album art correction system or better fetching. 
+- add alternative styling options inspired by different music apps. 
+- Lyric and syncing? (this would require spotify api/cider api to get needed info.)
 

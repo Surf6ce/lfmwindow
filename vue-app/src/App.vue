@@ -23,6 +23,7 @@ const backgroundBrightness = ref(Number(localStorage.getItem('backgroundBrightne
 const backgroundBlur = ref(Number(localStorage.getItem('backgroundBlur')) || 80);
 const artworkSize = ref(Number(localStorage.getItem('artworkSize')) || 450);
 const mbOnlyArt = ref(localStorage.getItem('mbOnlyArt') ? localStorage.getItem('mbOnlyArt') === 'true' : true);
+const artworkSource = ref(localStorage.getItem('artworkSource') || 'musicbrainz'); // 'musicbrainz' | 'apple'
 
 watch(borderRadius, (val) => {
   localStorage.setItem('borderRadius', val);
@@ -40,6 +41,7 @@ watch(backgroundBlur, (val) => {
 
 watch(mbOnlyArt, (val) => localStorage.setItem('mbOnlyArt', String(val)));
 watch(artworkSize, (val) => localStorage.setItem('artworkSize', val));
+watch(artworkSource, (val) => localStorage.setItem('artworkSource', val));
 
 // Function to update CSS variables and orb opacity based on brightness and blur
 const updateBackgroundStyles = () => {
@@ -338,15 +340,8 @@ async function fetchNowPlaying(e) {
     // Always try to get high-quality album art from MusicBrainz/Cover Art Archive first
   let mbUrl = null;
   let appleUrl = null;
-    try {
-      const mbData = await fetchMBArtwork(trackData.artist, trackData.name, trackData.album);
-      mbUrl = mbData?.artworkUrl || null;
-      if (mbUrl) debugLog('Using MusicBrainz/CoverArt artwork');
-    } catch (e) {
-      debugLog('MB artwork fetch error (non-fatal):', e);
-    }
-
-    if (!mbUrl) {
+    if (artworkSource.value === 'apple') {
+      // Prefer Apple first, then MB as fallback
       try {
         const ap = await fetchAppleArtwork(trackData.artist, trackData.name, trackData.album);
         appleUrl = ap?.artworkUrl || null;
@@ -354,15 +349,53 @@ async function fetchNowPlaying(e) {
       } catch (e) {
         debugLog('Apple artwork fetch error (non-fatal):', e);
       }
+      if (!appleUrl) {
+        try {
+          const mbData = await fetchMBArtwork(trackData.artist, trackData.name, trackData.album);
+          mbUrl = mbData?.artworkUrl || null;
+          if (mbUrl) debugLog('Using MusicBrainz/CoverArt artwork (fallback)');
+        } catch (e) {
+          debugLog('MB artwork fetch error (non-fatal):', e);
+        }
+      }
+    } else {
+      // Default: prefer MusicBrainz first, then Apple fallback
+      try {
+        const mbData = await fetchMBArtwork(trackData.artist, trackData.name, trackData.album);
+        mbUrl = mbData?.artworkUrl || null;
+        if (mbUrl) debugLog('Using MusicBrainz/CoverArt artwork');
+      } catch (e) {
+        debugLog('MB artwork fetch error (non-fatal):', e);
+      }
+      if (!mbUrl) {
+        try {
+          const ap = await fetchAppleArtwork(trackData.artist, trackData.name, trackData.album);
+          appleUrl = ap?.artworkUrl || null;
+          if (appleUrl) debugLog('Using Apple Music artwork (fallback)');
+        } catch (e) {
+          debugLog('Apple artwork fetch error (non-fatal):', e);
+        }
+      }
     }
 
-  const finalImage = mbUrl || appleUrl || (mbOnlyArt.value ? null : (trackData.image || null)); // optional fallback
+  const preferredFirst = artworkSource.value === 'apple' ? appleUrl : mbUrl;
+  const preferredSecond = artworkSource.value === 'apple' ? mbUrl : appleUrl;
+  const finalImage = preferredFirst || preferredSecond || (mbOnlyArt.value ? null : (trackData.image || null)); // optional fallback
+  let source = 'none';
+  if (finalImage) {
+    if (finalImage === mbUrl) source = 'musicbrainz';
+    else if (finalImage === appleUrl) source = 'apple';
+    else if (finalImage === trackData.image) source = 'lastfm';
+  }
+
+    // Debug: report where the artwork came from and its URL
+    debugLog('Artwork source:', source, finalImage ? `(url: ${finalImage})` : '(no image)', (mbOnlyArt.value && !finalImage) ? '[MB-only mode]' : '');
 
     // Set the track only after deciding on the final artwork to avoid flicker
     current.value = {
       ...trackData,
       image: finalImage,
-  artworkSource: mbUrl ? 'musicbrainz' : (appleUrl ? 'apple' : (trackData.image ? 'lastfm' : 'none')),
+      artworkSource: source,
     };
     isPlaying.value = trackData.nowPlaying;
 
@@ -549,6 +582,13 @@ onMounted(() => {
 
           <div class="form-section">
             <h4 class="section-title">Options</h4>
+            <div class="form-group">
+              <label for="artworkSource" class="form-label">Artwork Source</label>
+              <select id="artworkSource" class="modern-input" v-model="artworkSource">
+                <option value="musicbrainz">MusicBrainz</option>
+                <option value="apple">Apple Music</option>
+              </select>
+            </div>
             <div class="form-group toggle-group">
               <div class="toggle-item">
                 <span class="toggle-label">Auto Refresh (6s)</span>
