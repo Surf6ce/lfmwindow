@@ -19,7 +19,11 @@ const needsOnboarding = ref(!localStorage.getItem('username'))
 const accentColor = ref('#ffffff') // Default accent
 const backgroundColors = ref(['#1a1a1a', '#2a2a2a', '#3a3a3a', '#4a4a4a', '#5a5a5a']) // Default background colors
 const borderRadius = ref(Number(localStorage.getItem('borderRadius')) || 5);
-const backgroundBrightness = ref(Number(localStorage.getItem('backgroundBrightness')) || 5);
+const backgroundBrightness = ref(
+  localStorage.getItem('backgroundBrightness') !== null
+    ? Number(localStorage.getItem('backgroundBrightness'))
+    : 50
+);
 const backgroundBlur = ref(Number(localStorage.getItem('backgroundBlur')) || 80);
 const artworkSize = ref(Number(localStorage.getItem('artworkSize')) || 450);
 const mbOnlyArt = ref(localStorage.getItem('mbOnlyArt') ? localStorage.getItem('mbOnlyArt') === 'true' : true);
@@ -51,16 +55,35 @@ const updateBackgroundStyles = () => {
   // Set CSS blur variable
   document.documentElement.style.setProperty('--vibrancy-blur', `${blur}px`);
 
-  // Calculate orb opacity: 0% = 0.2, 100% = 1.0
-  orbOpacity.value = 0.2 + (brightness / 100) * 0.8;
+  // Map 0..100 -> CSS brightness factor 0.3..1.2 (avoid too dark/too bright extremes)
+  const norm = Math.max(0, Math.min(200, brightness)); // 0..200
+  // brightness: 0 -> 0.3, 100 -> 1.0, 200 -> 1.6
+  const cssBrightness = norm <= 100
+    ? 0.3 + (norm / 100) * (1.0 - 0.3)
+    : 1.0 + ((norm - 100) / 100) * 0.6;
+  // saturation: 0 -> 0.6, 100 -> 1.0, 200 -> 1.6
+  const cssSaturate = norm <= 100
+    ? 0.6 + (norm / 100) * (1.0 - 0.6)
+    : 1.0 + ((norm - 100) / 100) * 0.6;
+  // contrast: 0 -> 0.9, 100 -> 1.0, 200 -> 1.15
+  const cssContrast = norm <= 100
+    ? 0.9 + (norm / 100) * (1.0 - 0.9)
+    : 1.0 + ((norm - 100) / 100) * 0.15;
+
+  document.documentElement.style.setProperty('--bg-brightness', String(cssBrightness));
+  document.documentElement.style.setProperty('--bg-saturate', String(cssSaturate));
+  document.documentElement.style.setProperty('--bg-contrast', String(cssContrast));
+
+  // Calculate orb opacity to subtly follow brightness across 0..200: 0 -> 0.25, 100 -> 0.9, 200 -> 1.0
+  orbOpacity.value = 0.25 + (norm / 200) * (1.0 - 0.25);
 };
 
 // Orb opacity (reactive)
 import { ref as vueRef } from 'vue';
 const orbOpacity = vueRef(0.6);
 const orbs = vueRef([]);
-const ORBS_STORAGE_KEY = 'bgOrbsV1';
-const ORBS_COUNT = 48; // "a ton more"
+const ORBS_STORAGE_KEY = 'bgOrbsV3';
+const ORBS_COUNT = 160; // denser field for smoother diffusion
 
 function initOrbs() {
   // Try to load persisted orbs for deterministic layout across refreshes
@@ -74,7 +97,7 @@ function initOrbs() {
 
   const arr = [];
   for (let i = 0; i < ORBS_COUNT; i++) {
-    const size = Math.round(120 + Math.random() * 140); // 120–260px
+    const size = Math.round(120 + Math.random() * 100); // 120–220px, bigger for stronger diffusion
     const top = Math.round(Math.random() * 100); // percent
     const left = Math.round(Math.random() * 100); // percent
     const colorIndex = i; // will map to palette via modulo
@@ -561,9 +584,9 @@ onMounted(() => {
                 <span class="slider-value">{{ backgroundBrightness }}%</span>
               </div>
                 <div class="ios-slider">
-                  <input id="backgroundBrightness" type="range" min="0" max="100" v-model.number="backgroundBrightness" class="slider-input" />
-                <div class="slider-track" :style="{ width: backgroundBrightness + '%' }"></div>
-                <div class="slider-thumb" :style="{ left: backgroundBrightness + '%' }"></div>
+                  <input id="backgroundBrightness" type="range" min="0" max="200" v-model.number="backgroundBrightness" class="slider-input" />
+                <div class="slider-track" :style="{ width: (backgroundBrightness / 200) * 100 + '%' }"></div>
+                <div class="slider-thumb" :style="{ left: (backgroundBrightness / 200) * 100 + '%' }"></div>
               </div>
             </div>
             
