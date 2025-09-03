@@ -198,8 +198,9 @@ body {
   right: 0;
   width: 100%;
   height: 100%;
-  background: rgba(15, 15, 20, 0.95);
-  backdrop-filter: blur(40px) saturate(180%);
+  /* Match onboarding glass style */
+  background: rgba(20,20,20,0.75);
+  backdrop-filter: blur(20px) saturate(160%);
   border-left: 1px solid rgba(255,255,255,0.08);
   padding: 0;
   color: #fff;
@@ -218,8 +219,8 @@ body {
 
 .settings-header h3 {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.6rem; /* align with onboarding */
+  font-weight: 600;
   color: #fff;
 }
 
@@ -269,21 +270,22 @@ body {
   outline: none;
 }
 
+.modern-input {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 999px;
+  height: 48px;
+  padding: 0 18px;
+  color: #fff;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  outline: none;
+}
 .modern-input:focus {
-  background: rgba(255,255,255,0.12);
-  border-color: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.10);
+  border-color: var(--accent-color, #ffffff);
   box-shadow: 0 0 0 3px rgba(255,255,255,0.05);
 }
-
-.modern-input::placeholder {
-  color: rgba(255,255,255,0.4);
-}
-
-/* iOS-style Sliders */
-.slider-group {
-  gap: 12px;
-}
-
 .slider-header {
   display: flex;
   justify-content: space-between;
@@ -430,22 +432,23 @@ body {
   box-shadow: 0 6px 20px rgba(0,0,0,0.4);
 }
 
-.modern-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
-
-/* Now Playing badge */
-.now-playing-badge {
-  display: inline-block;
-  background: rgba(128,128,128,0.3);
-  color: #fff;
-  font-weight: 600;
-  border-radius: 16px;
-  padding: 4px 16px;
-  margin-bottom: 16px;
+.modern-btn {
+  background: #fff;
+  color: #222;
+  border: none;
+  border-radius: 999px;
+  height: 50px;
+  padding: 0 28px;
   font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: .2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 30px rgba(0,0,0,.25);
+  margin-top: 8px;
 }
+.modern-btn:hover { filter: brightness(0.98); transform: translateY(-1px); }
+.modern-btn:active { transform: translateY(0); }
 
 /* Sidebar overlay */
 .sidebar-overlay {
@@ -527,8 +530,8 @@ body {
 }
 
 .hero-info .artist-lg {
-  font-size: 1.5rem;
-  color: #b8b8b8;
+  font-size: 1.65rem;
+  color: #e5e5e5; /* slightly less than white, brighter than previous */
   text-shadow: 
   0 1.5px 4px rgba(0,0,0,0.38), 
   0 0 3px rgba(0,0,0,0.22);
@@ -536,7 +539,7 @@ body {
 
 .hero-info .album-lg {
   font-size: 1.1rem;
-  color: #909090;
+  color: #bbbbbb; /* dimmest of the three, brighter than the old #909090 */
   margin-top: 0.5rem;
   text-shadow: 
   0 1.5px 3px rgba(0,0,0,0.34), 

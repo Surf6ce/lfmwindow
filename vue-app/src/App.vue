@@ -26,7 +26,6 @@ const backgroundBrightness = ref(
 );
 const backgroundBlur = ref(Number(localStorage.getItem('backgroundBlur')) || 80);
 const artworkSize = ref(Number(localStorage.getItem('artworkSize')) || 450);
-const mbOnlyArt = ref(localStorage.getItem('mbOnlyArt') ? localStorage.getItem('mbOnlyArt') === 'true' : true);
 const artworkSource = ref(localStorage.getItem('artworkSource') || 'musicbrainz'); // 'musicbrainz' | 'apple'
 
 watch(borderRadius, (val) => {
@@ -43,7 +42,6 @@ watch(backgroundBlur, (val) => {
   updateBackgroundStyles();
 });
 
-watch(mbOnlyArt, (val) => localStorage.setItem('mbOnlyArt', String(val)));
 watch(artworkSize, (val) => localStorage.setItem('artworkSize', val));
 watch(artworkSource, (val) => localStorage.setItem('artworkSource', val));
 
@@ -181,6 +179,7 @@ async function fetchAppleArtwork(artist, track, album) {
     return null;
   }
 }
+
 
 function debugLog(...args) {
   if (debugMode.value) console.log('[LFMWindow Debug]', ...args)
@@ -362,7 +361,7 @@ async function fetchNowPlaying(e) {
   const processTrack = async (trackData) => {
     // Always try to get high-quality album art from MusicBrainz/Cover Art Archive first
   let mbUrl = null;
-  let appleUrl = null;
+  let appleUrl = null; // static
     if (artworkSource.value === 'apple') {
       // Prefer Apple first, then MB as fallback
       try {
@@ -403,26 +402,26 @@ async function fetchNowPlaying(e) {
 
   const preferredFirst = artworkSource.value === 'apple' ? appleUrl : mbUrl;
   const preferredSecond = artworkSource.value === 'apple' ? mbUrl : appleUrl;
-  const finalImage = preferredFirst || preferredSecond || (mbOnlyArt.value ? null : (trackData.image || null)); // optional fallback
+  const finalDisplay = preferredFirst || preferredSecond || (trackData.image || null);
   let source = 'none';
-  if (finalImage) {
-    if (finalImage === mbUrl) source = 'musicbrainz';
-    else if (finalImage === appleUrl) source = 'apple';
-    else if (finalImage === trackData.image) source = 'lastfm';
+  if (finalDisplay) {
+    if (finalDisplay === mbUrl) source = 'musicbrainz';
+    else if (finalDisplay === appleUrl) source = 'apple';
+    else if (finalDisplay === trackData.image) source = 'lastfm';
   }
 
     // Debug: report where the artwork came from and its URL
-    debugLog('Artwork source:', source, finalImage ? `(url: ${finalImage})` : '(no image)', (mbOnlyArt.value && !finalImage) ? '[MB-only mode]' : '');
+  debugLog('Artwork source:', source, finalDisplay ? `(url: ${finalDisplay})` : '(no image)');
 
     // Set the track only after deciding on the final artwork to avoid flicker
     current.value = {
       ...trackData,
-      image: finalImage,
+      image: finalDisplay,
       artworkSource: source,
     };
     isPlaying.value = trackData.nowPlaying;
 
-    await updateAccentColor(finalImage);
+    await updateAccentColor(finalDisplay);
   };
 
   // API Method
@@ -627,13 +626,7 @@ onMounted(() => {
                   <span class="switch-slider"></span>
                 </label>
               </div>
-              <div class="toggle-item">
-                <span class="toggle-label">Only use MusicBrainz album art</span>
-                <label class="ios-switch">
-                  <input type="checkbox" v-model="mbOnlyArt" />
-                  <span class="switch-slider"></span>
-                </label>
-              </div>
+              
             </div>
           </div>
 
@@ -650,7 +643,8 @@ onMounted(() => {
   <div class="compact-inner" :style="{ paddingTop: (Number(artworkSize) + 40) + 'px' }">
       <!-- Floating Artwork Layer -->
   <div v-if="current" class="artwork-floating" :style="{ width: artworkSize + 'px', height: artworkSize + 'px', borderRadius: borderRadius + 'px' }">
-        <img :src="current.image || defaultImage" alt="Album art" @error="e => e.target.src = defaultImage" crossorigin="anonymous" />
+  <img v-if="current?.image" :src="current.image" alt="Album art" class="artwork-media" :style="{ width: artworkSize + 'px', height: artworkSize + 'px' }" />
+  <div v-else class="artwork-placeholder" :style="{ width: artworkSize + 'px', height: artworkSize + 'px' }"></div>
       </div>
       <transition name="fade" mode="out-in">
         <div class="now-playing-card" v-if="current" :key="current.name + current.artist">
