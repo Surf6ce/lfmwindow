@@ -27,6 +27,8 @@ const backgroundBrightness = ref(
 const backgroundBlur = ref(Number(localStorage.getItem('backgroundBlur')) || 80);
 const artworkSize = ref(Number(localStorage.getItem('artworkSize')) || 450);
 const artworkSource = ref(localStorage.getItem('artworkSource') || 'musicbrainz'); // 'musicbrainz' | 'apple'
+// Theme
+const themeStyle = ref(localStorage.getItem('themeStyle') || 'default'); // 'default' | 'formula'
 
 watch(borderRadius, (val) => {
   localStorage.setItem('borderRadius', val);
@@ -44,6 +46,7 @@ watch(backgroundBlur, (val) => {
 
 watch(artworkSize, (val) => localStorage.setItem('artworkSize', val));
 watch(artworkSource, (val) => localStorage.setItem('artworkSource', val));
+watch(themeStyle, (val) => localStorage.setItem('themeStyle', val));
 
 // Function to update CSS variables and orb opacity based on brightness and blur
 const updateBackgroundStyles = () => {
@@ -524,13 +527,20 @@ onMounted(() => {
   width: o.size + 'px',
   height: o.size + 'px',
   top: o.top + '%',
-  left: o.left + '%'
+  left: o.left + '%',
+  '--fade-duration': (6 + (i % 7)) + 's',
+  '--fade-delay': (i % 5) + 's',
+  '--drift-duration': (8 + (i % 9)) + 's',
+  '--drift-delay': ((i * 0.37) % 6).toFixed(2) + 's',
+  '--drift-x': ((i % 2 === 0 ? 1 : -1) * (6 + (i % 8))) + 'px',
+  '--drift-y': (((i + 3) % 2 === 0 ? 1 : -1) * (4 + (i % 7))) + 'px',
+  '--drift-scale': (1 + ((i % 5) * 0.01)).toFixed(2)
     }"
   />
   </div>
   
   <Onboarding v-if="needsOnboarding" />
-  <div v-else class="container compact-wrap" :style="{ '--accent-color': accentColor }">
+  <div v-else class="container compact-wrap" :class="{ 'design-formula': themeStyle === 'formula' }" :style="{ '--accent-color': accentColor }">
     <!-- Settings Sidebar -->
     <div class="settings-sidebar" :class="{ 'is-open': isSettingsOpen }">
       <div class="sidebar-content">
@@ -553,6 +563,13 @@ onMounted(() => {
 
           <div class="form-section">
             <h4 class="section-title">Appearance</h4>
+            <div class="form-group">
+              <label for="themeStyle" class="form-label">Theme</label>
+              <select id="themeStyle" class="modern-input" v-model="themeStyle">
+                <option value="default">Default</option>
+                <option value="formula">Formula of Love</option>
+              </select>
+            </div>
             <div class="form-group slider-group">
               <div class="slider-header">
                 <label for="borderRadius" class="form-label">Album Art Rounding</label>
@@ -571,9 +588,9 @@ onMounted(() => {
                 <span class="slider-value">{{ artworkSize }}px</span>
               </div>
                 <div class="ios-slider">
-                  <input id="artworkSize" type="range" min="220" max="640" v-model.number="artworkSize" class="slider-input" />
-                <div class="slider-track" :style="{ width: ((artworkSize - 220) / (640 - 220)) * 100 + '%' }"></div>
-                <div class="slider-thumb" :style="{ left: ((artworkSize - 220) / (640 - 220)) * 100 + '%' }"></div>
+                  <input id="artworkSize" type="range" min="220" max="800" v-model.number="artworkSize" class="slider-input" />
+                <div class="slider-track" :style="{ width: ((artworkSize - 220) / (800 - 220)) * 100 + '%' }"></div>
+                <div class="slider-thumb" :style="{ left: ((artworkSize - 220) / (800 - 220)) * 100 + '%' }"></div>
               </div>
             </div>
             
@@ -645,9 +662,14 @@ onMounted(() => {
   <div v-if="current" class="artwork-floating" :style="{ width: artworkSize + 'px', height: artworkSize + 'px', borderRadius: borderRadius + 'px' }">
   <img v-if="current?.image" :src="current.image" alt="Album art" class="artwork-media" :style="{ width: artworkSize + 'px', height: artworkSize + 'px' }" />
   <div v-else class="artwork-placeholder" :style="{ width: artworkSize + 'px', height: artworkSize + 'px' }"></div>
+        <!-- Formula theme: caption inside artwork (no hardcoded text) -->
+        <div v-if="themeStyle === 'formula'" class="formula-caption-inset">
+          <div class="fc-title">{{ current.name }}</div>
+          <div class="fc-sub">{{ current.artist }}<template v-if="current.album && current.album !== '—'"> — {{ current.album }}</template></div>
+        </div>
       </div>
       <transition name="fade" mode="out-in">
-        <div class="now-playing-card" v-if="current" :key="current.name + current.artist">
+        <div class="now-playing-card" v-if="current && themeStyle !== 'formula'" :key="current.name + current.artist">
           <!-- Song Info Only (artwork is floating above) -->
           <div class="hero-info">
             <div class="row mb-1" style="gap:10px; justify-content: center;">
@@ -659,6 +681,7 @@ onMounted(() => {
           </div>
         </div>
       </transition>
+      
       <div class="now-playing-card" v-if="!current && isLoading">
   <div class="artwork artwork-hero skeleton-art"></div>
         <div class="hero-info">
@@ -689,7 +712,7 @@ onMounted(() => {
 
   <!-- Bottom Now Playing Pill -->
   <div class="bottom-pill" v-if="current">
-    <div class="bottom-pill-inner bp-only-state">
+    <div :class="['bottom-pill-inner', 'bp-only-state', { 'bp-formula': themeStyle === 'formula' }]">
       <div class="bp-state">{{ isPlaying ? 'Now Playing' : 'Recently Played' }}</div>
     </div>
   </div>

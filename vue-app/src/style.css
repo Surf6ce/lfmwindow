@@ -40,15 +40,26 @@ body {
   position: absolute;
   border-radius: 50%;
   opacity: var(--vibrancy-opacity, 0.6);
-  animation: orbFade 8s ease-in-out infinite;
+  /* Two animations: fade (opacity) and drift (subtle movement) */
+  animation: 
+    orbFade var(--fade-duration, 6s) ease-in-out infinite,
+    orbDrift var(--drift-duration, 18s) ease-in-out infinite;
+  animation-delay: var(--fade-delay, 0s), var(--drift-delay, 0s);
   transition: background-color 2s ease, opacity 0.3s ease;
   mix-blend-mode: screen;
-  will-change: transform;
+  will-change: transform, opacity;
 }
 
 @keyframes orbFade {
   0%, 100% { opacity: 0.35; }
   50% { opacity: 0.65; }
+}
+
+/* Gentle positional drift around the starting point */
+@keyframes orbDrift {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(var(--drift-x, 12px), var(--drift-y, -10px)) scale(var(--drift-scale, 1.04)); }
+  100% { transform: translate(0, 0) scale(1); }
 }
 
 /* Bottom Now Playing Pill */
@@ -100,9 +111,21 @@ body {
 .bp-artist { font-size: 0.85rem; opacity: 0.85 }
 .bp-state { margin-left: 12px; font-size: 0.85rem; opacity: 0.85 }
 
+/* Formula theme: make the bottom pill match the inset caption style */
+.bp-formula {
+  background: rgba(24,24,24,0.78);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: var(--formula-info-radius, 16px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+}
+.bp-formula .bp-state {
+  font-weight: 700;
+  opacity: .95;
+}
+
 /* sizes/positions are set inline from Vue now; keep only the keyframes below */
 
-/* removed float animations; orbs now fade only */
+/* orbs now fade and gently drift */
 
 /* Fade transition styles */
 .fade-enter-active, .fade-leave-active {
@@ -151,14 +174,47 @@ body {
   background-color: #1a1a1a;
   box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
   transition: width .2s ease, height .2s ease, border-radius .2s ease;
-  max-width: min(90vw, 640px);
-  max-height: min(90vw, 640px);
+  max-width: min(92vw, 800px);
+  max-height: min(92vw, 800px);
 }
 .artwork-floating img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* Formula of Love theme */
+.design-formula { --formula-info-radius: 16px; }
+.design-formula .compact-inner { max-width: 680px; }
+/* Inset caption overlay inside artwork */
+.formula-caption-inset {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  background: rgba(24,24,24,0.78);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: var(--formula-info-radius, 16px);
+  color: #fff;
+  padding: 10px 16px 12px;
+  text-align: center;
+  backdrop-filter: blur(12px) saturate(160%);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+}
+.formula-caption-inset .fc-title { font-size: 1.4rem; font-weight: 800; letter-spacing: .4px; }
+.formula-caption-inset .fc-sub { font-size: .95rem; opacity: .95; margin-top: 4px; }
+
+/* Formula theme: song title should be light (300) Figtree */
+.design-formula .formula-caption-inset .fc-title {
+  font-family: 'Figtree', system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+  font-weight: 500;
+}
+
+/* Slightly darker artist/album line in Formula theme */
+.design-formula .formula-caption-inset .fc-sub {
+  color: rgba(255,255,255,0.82);
+  opacity: 1; /* rely on color alpha rather than element opacity */
 }
 
 /* Settings Toggle Button */
